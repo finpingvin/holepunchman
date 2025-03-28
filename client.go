@@ -19,7 +19,7 @@ func RunClient(serverIp *string, serverPort *string) {
 	fmt.Println("Local UDP address:", localAddr)
 
 	// Register with server
-	serverUDPAddr, _ := net.ResolveUDPAddr("udp", serverAddr)
+	serverUDPAddr, _ := net.ResolveUDPAddr("udp4", serverAddr)
 	_, err = localConn.WriteToUDP([]byte("register"), serverUDPAddr)
 	if err != nil {
 		panic(err)
@@ -38,7 +38,7 @@ func RunClient(serverIp *string, serverPort *string) {
 	fmt.Println("Received peer info:", peer)
 
 	peerAddrStr := net.JoinHostPort(peer.IP, peer.Port)
-	peerUDPAddr, _ := net.ResolveUDPAddr("udp", peerAddrStr)
+	peerUDPAddr, _ := net.ResolveUDPAddr("udp4", peerAddrStr)
 
 	// Jab a bit
 	for i := 0; i < 30; i++ {
