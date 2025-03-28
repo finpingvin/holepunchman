@@ -44,13 +44,13 @@ func RunClient(serverIp *string, serverPort *string) {
 	for i := 0; i < 30; i++ {
 		msg := fmt.Sprintf("punch %d", i)
 		localConn.WriteToUDP([]byte(msg), peerUDPAddr)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 	}
 
 	// Punch receiver goroutine
 	go func() {
+		fmt.Println("Reading messages")
 		for {
-			fmt.Println("Reading messages")
 			n, addr, err := localConn.ReadFromUDP(buf)
 			if err != nil {
 				fmt.Println("Read error:", err)
@@ -66,11 +66,11 @@ func RunClient(serverIp *string, serverPort *string) {
 
 	// Puncher goroutine
 	go func() {
+		fmt.Printf("Writing messages to: %s:%s\n", peer.IP, peer.Port)
 		for {
-			fmt.Println("Writing messages")
 			msg := fmt.Sprintf("Punch to: %s", peer.Port)
 			localConn.WriteToUDP([]byte(msg), peerUDPAddr)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 		}
 	}()
 

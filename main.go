@@ -14,6 +14,10 @@ func main() {
 
 	switch *mode {
 	case "server":
+		if *serverPort == "" {
+			fmt.Println("Server mode requires -port flag")
+			os.Exit(1)
+		}
 		fmt.Println("Running in server mode")
 		RunServer(serverPort)
 
