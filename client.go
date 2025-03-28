@@ -25,6 +25,13 @@ func RunClient(serverIp *string, serverPort *string) {
 		panic(err)
 	}
 
+	go func() {
+		for {
+			localConn.WriteToUDP([]byte("keepalive"), serverUDPAddr)
+			time.Sleep(50 * time.Second)
+		}
+	}()
+
 	// Wait for peer info
 	buf := make([]byte, 1024)
 	n, _, err := localConn.ReadFromUDP(buf)
