@@ -28,7 +28,7 @@ func RunClient(serverIp *string, serverPort *string) {
 	go func() {
 		for {
 			localConn.WriteToUDP([]byte("keepalive"), serverUDPAddr)
-			time.Sleep(50 * time.Second)
+			time.Sleep(5 * time.Second)
 		}
 	}()
 
