@@ -9,7 +9,7 @@ import (
 
 func RunClient(serverIp *string, serverPort *string) {
 	serverAddr := fmt.Sprintf("%s:%s", *serverIp, *serverPort)
-	localConn, err := net.ListenUDP("udp", nil)
+	localConn, err := net.ListenUDP("udp4", nil)
 	if err != nil {
 		panic(err)
 	}

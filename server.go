@@ -8,8 +8,8 @@ import (
 
 func RunServer(serverAddr *string) {
 	addr := fmt.Sprintf(":%s", *serverAddr)
-	udpAddr, _ := net.ResolveUDPAddr("udp", addr)
-	conn, err := net.ListenUDP("udp", udpAddr)
+	udpAddr, _ := net.ResolveUDPAddr("udp4", addr)
+	conn, err := net.ListenUDP("udp4", udpAddr)
 	if err != nil {
 		panic(err)
 	}
