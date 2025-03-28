@@ -4,18 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"strconv"
-	"strings"
 	"time"
 )
 
-type PeerInfo struct {
-	IP   string
-	Port string
-}
-
-func main() {
-	serverAddr := "my.server.ip:9000" // Replace with your server IP
+func RunClient(serverIp *string, serverPort *string) {
+	serverAddr := fmt.Sprintf("%s:%s", *serverIp, *serverPort)
 	localConn, err := net.ListenUDP("udp", nil)
 	if err != nil {
 		panic(err)
@@ -47,23 +40,14 @@ func main() {
 	peerAddrStr := net.JoinHostPort(peer.IP, peer.Port)
 	peerUDPAddr, _ := net.ResolveUDPAddr("udp", peerAddrStr)
 
-	// Punch hole
-	for i := 0; i < 10; i++ {
+	// Jab a bit
+	for i := 0; i < 30; i++ {
 		msg := fmt.Sprintf("punch %d", i)
 		localConn.WriteToUDP([]byte(msg), peerUDPAddr)
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 
-	// Decide role: initiator or responder
-	peerPortInt, err := strconv.Atoi(peer.Port)
-	if err != nil {
-		panic(err)
-	}
-	isInitiator := min(localAddr.Port, peerPortInt) == localAddr.Port
-
-	fmt.Println("Initiator?", isInitiator, localAddr.Port, peerPortInt)
-
-	// Listener goroutine
+	// Punch receiver goroutine
 	go func() {
 		for {
 			fmt.Println("Reading messages")
@@ -72,29 +56,25 @@ func main() {
 				fmt.Println("Read error:", err)
 				continue
 			}
+			if n == 0 {
+				continue
+			}
 			msg := string(buf[:n])
 			fmt.Printf("Received from %s: %s\n", addr, msg)
-
-			if strings.TrimSpace(msg) == "ping" {
-				localConn.WriteToUDP([]byte("pong"), peerUDPAddr)
-				fmt.Println("Sent pong")
-			}
 		}
 	}()
 
-	if isInitiator {
-		// Initiator sends ping
-		time.Sleep(1 * time.Second)
-		for i := 0; i < 10; i++ {
-			msg := fmt.Sprintf("ping %d", i)
-			fmt.Println("Sending ping to peer...", peerUDPAddr)
+	// Puncher goroutine
+	go func() {
+		for {
+			fmt.Println("Writing messages")
+			msg := fmt.Sprintf("Punch to: %s", peer.Port)
 			localConn.WriteToUDP([]byte(msg), peerUDPAddr)
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
-		// localConn.WriteToUDP([]byte("ping"), peerUDPAddr)
-	}
+	}()
 
-	// Wait to allow ping/pong exchange to complete
-	time.Sleep(30 * time.Second)
+	// Trade punches for 60 seconds
+	time.Sleep(60 * time.Second)
 	fmt.Println("Done. Exiting.")
 }

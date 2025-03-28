@@ -4,21 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"sync"
 )
 
-type PeerInfo struct {
-	IP   string
-	Port string
-}
-
-var (
-	peers []PeerInfo
-	mu    sync.Mutex
-)
-
-func main() {
-	addr := ":9000"
+func RunServer(serverAddr *string) {
+	addr := fmt.Sprintf(":%s", *serverAddr)
 	udpAddr, _ := net.ResolveUDPAddr("udp", addr)
 	conn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
@@ -26,36 +15,42 @@ func main() {
 	}
 	defer conn.Close()
 
-	fmt.Println("NAT relay server listening on", addr)
+	fmt.Println("Relay server listening on", addr)
+
+	var peer1, peer2 *net.UDPAddr
 
 	buf := make([]byte, 1024)
 	for {
 		n, remoteAddr, _ := conn.ReadFromUDP(buf)
 		message := string(buf[:n])
-		fmt.Println("Received:", message, "from", remoteAddr)
+		fmt.Println("Received from", remoteAddr, ":", message)
 
-		mu.Lock()
-		peer := PeerInfo{IP: remoteAddr.IP.String(), Port: fmt.Sprintf("%d", remoteAddr.Port)}
-		peers = append(peers, peer)
-		fmt.Println("Peers", peers)
+		if message == "register" {
+			if peer1 == nil {
+				peer1 = remoteAddr
+				continue
+			}
+			if peer2 == nil {
+				peer2 = remoteAddr
+			}
 
-		if len(peers) == 2 {
-			// Send each other's address to both clients
-			p1 := peers[0]
-			p2 := peers[1]
+			// Send peer info
+			info1 := PeerInfo{IP: peer1.IP.String(), Port: fmt.Sprintf("%d", peer1.Port)}
+			info2 := PeerInfo{IP: peer2.IP.String(), Port: fmt.Sprintf("%d", peer2.Port)}
+			data1, _ := json.Marshal(info2)
+			data2, _ := json.Marshal(info1)
 
-			msg1, _ := json.Marshal(p2)
-			msg2, _ := json.Marshal(p1)
+			conn.WriteToUDP(data1, peer1)
+			conn.WriteToUDP(data2, peer2)
 
-			addr1, _ := net.ResolveUDPAddr("udp", net.JoinHostPort(p1.IP, p1.Port))
-			addr2, _ := net.ResolveUDPAddr("udp", net.JoinHostPort(p2.IP, p2.Port))
+			// Send "start punching" message to both
+			conn.WriteToUDP([]byte("START"), peer1)
+			conn.WriteToUDP([]byte("START"), peer2)
 
-			conn.WriteToUDP(msg1, addr1)
-			conn.WriteToUDP(msg2, addr2)
+			fmt.Println("Sent peer info + START to both clients")
 
-			fmt.Println("Exchanged peer info")
-			peers = nil // Reset for new pair
+			// Reset for next pair
+			peer1, peer2 = nil, nil
 		}
-		mu.Unlock()
 	}
 }
